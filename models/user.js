@@ -117,8 +117,8 @@ class User {
 
   /** Given a username, return data about user.
    *
-   * Returns { username, first_name, last_name, is_admin, jobs }
-   *   where jobs is { id, title, company_handle, company_name, state }
+   * Returns { username, first_name, last_name, is_admin, applications }
+   *    where applications is [job_id,...]
    *
    * Throws NotFoundError if user not found.
    **/
@@ -143,8 +143,16 @@ class User {
           `SELECT a.job_id
            FROM applications AS a
            WHERE a.username = $1`, [username]);
-
+    
+           
+    // Creating an applications object (to be assigned to user.applications)
+    //    user.applications = {job_id: true, etc...}
+    //    -- No longer implemented in this manner --
+    // const applications = userApplicationsRes.rows.map(a => a.job_id);
+    // user.applications = Object.fromEntries(applications.map( id => [id, 'true']));
+    // console.log('BACKEND User.get userApplicationsRes.rows:', userApplicationsRes.rows);
     user.applications = userApplicationsRes.rows.map(a => a.job_id);
+    // console.log('BACKEND User.get user.applications:', user.applications);
     return user;
   }
 
@@ -218,6 +226,7 @@ class User {
    **/
 
   static async applyToJob(username, jobId) {
+    // Check to ensure job exists
     const preCheck = await db.query(
           `SELECT id
            FROM jobs
@@ -226,6 +235,7 @@ class User {
 
     if (!job) throw new NotFoundError(`No job: ${jobId}`);
 
+    // Check to ensure user exists
     const preCheck2 = await db.query(
           `SELECT username
            FROM users
